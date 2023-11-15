@@ -54,6 +54,7 @@ class StrategyEditor(tk.Frame):
 
         self.extra_params = {
             "Technical": [
+                {"code_name": "rsi_length", "name": "RSI Periods", "widget": tk.Entry, "data_type": int},
                 {"code_name": "ema_fast", "name": "MACD Fast Length", "widget": tk.Entry, "data_type": int},
                 {"code_name": "ema_slow", "name": "MACD Slow Length", "widget": tk.Entry, "data_type": int},
                 {"code_name": "ema_signal", "name": "MACD Signal Length", "widget": tk.Entry, "data_type": int},
@@ -186,10 +187,10 @@ class StrategyEditor(tk.Frame):
         if self.body_widgets['activation'][b_index].cget("text") == "OFF":
 
             if strat_selected == "Technical":
-                new_strategy = TechnicalStrategy(contract, exchange, timeframe, balance_pct, take_profit, stop_loss,
+                new_strategy = TechnicalStrategy(self.exchanges[exchange],contract, exchange, timeframe, balance_pct, take_profit, stop_loss,
                                                  self.additional_parameters[b_index])
             elif strat_selected == "Breakout":
-                new_strategy = BreakoutStrategy(contract, exchange, timeframe, balance_pct, take_profit, stop_loss,
+                new_strategy = BreakoutStrategy(self.exchanges[exchange],contract, exchange, timeframe, balance_pct, take_profit, stop_loss,
                                                  self.additional_parameters[b_index])
             else:
                 return
@@ -200,6 +201,9 @@ class StrategyEditor(tk.Frame):
                 self.root.logging_frame.add_log(f"No historical data retrieved for {contract.symbol}")
                 return
             
+            if exchange == "Binance":
+                self.exchanges[exchange].subscribe_channel([contract], "aggTrade")
+                
             self.exchanges[exchange].strategies[b_index] = new_strategy
 
 
@@ -207,8 +211,8 @@ class StrategyEditor(tk.Frame):
                 code_name = param['code_name']
                 if code_name != "activation" and "_var" not in code_name:
                     self.body_widgets[code_name][b_index].config(state=tk.DISABLED)
-                self.body_widgets['activation'][b_index].config(bg="darkgreen", text="ON")
-                self.root.logging_frame.add_log(f"{strat_selected} strategy on {symbol} / {timeframe} started")
+            self.body_widgets['activation'][b_index].config(bg="darkgreen", text="ON")
+            self.root.logging_frame.add_log(f"{strat_selected} strategy on {symbol} / {timeframe} started")
         else:
             del self.exchanges[exchange].strategies[b_index]    
 
@@ -216,5 +220,5 @@ class StrategyEditor(tk.Frame):
                 code_name = param['code_name']
                 if code_name != "activation" and "_var" not in code_name:
                     self.body_widgets[code_name][b_index].config(state=tk.NORMAL)
-                self.body_widgets['activation'][b_index].config(bg="darkred", text="OFF")
-                self.root.logging_frame.add_log(f"{strat_selected} strategy on {symbol} / {timeframe} stopped")
+            self.body_widgets['activation'][b_index].config(bg="darkred", text="OFF")
+            self.root.logging_frame.add_log(f"{strat_selected} strategy on {symbol} / {timeframe} stopped")
